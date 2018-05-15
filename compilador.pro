@@ -157,6 +157,8 @@ t_union(["union"|O], O).
 t_enum(["enum"|O], O).
 t_typedef(["typedef"|O], O).
 
+t_const(["const"|O], O).
+
 t_class(["auto"|O], O).
 t_class(["register"|O], O).
 t_class(["static"|O], O).
@@ -164,8 +166,6 @@ t_class(["extern"|O], O).
 t_class(["const"|O], O).
 t_class(["typedef"|O], O).
 t_class(["volatile"|O], O).
-
-t_const(["const"|O], O).
 
 t_main(["main"|O], O).
 t_if(["if"|O], O).
@@ -246,8 +246,12 @@ t_aspas(["\""|O], O).
 %#t_qualifier(["const"|O], O).
 %-------------Regras de formacao------------%
 programa(I, O):- dcls(I, O).
-programa(I, O):- write("erro\n").
+programa(I, O):- erro_.
 
+erro_:- O is G_pilha, balanceamento(O).
+erro_:- write("erro\n").
+balanceamento([H]):- write("nao esperado "), write(G_O), nl.
+balanceamento([H|T]):- write("nao esperado "), write(G_O), nl.
 
 
 %--reconhecer um id----%
@@ -287,7 +291,6 @@ string_list([H|L]):- t_imprimivel(H), string_list(L).
 dcls([], []).
 dcls(I, O):- dcl(I, O2), dcls(O2, O).
 
-
 dcl(I, O):- funcdcl(I, O).
 dcl(I, O):- funcproto(I, O).
 dcl(I, O):- structdcl(I, O).
@@ -297,14 +300,14 @@ dcl(I, O):- vardcl(I, O).
 dcl(I, O):- typedefdcl(I, O).
 
 %function declaration
-funcproto(I, O):- funcid(I, O1), t_parenteseA(O1, O2), types(O2, O3), t_parenteseF(O3, O4), t_pontovirgula(O4, O).
-funcproto(I, O):- funcid(I, O1),  t_parenteseA(O1, O2), params(O2, O3), t_parenteseF(O3, O4), t_pontovirgula(O4, O).
-funcproto(I, O):- funcid(I, O1), t_parenteseA(O1, O2),t_parenteseF(O2, O3), t_pontovirgula(O3, O).
+funcproto(I, O):- funcid(I, O1), t_parenteseA(O1, O2), P is G_pilha, push(O1, P, P1), G_pilha := P1, types(O2, O3), t_parenteseF(O3, O4), pop(P1, P2),G_pilha := P2, t_pontovirgula(O4, O).
+funcproto(I, O):- funcid(I, O1),  t_parenteseA(O1, O2),  P is G_pilha, pop(P, P_), push(O1, P_, P1), G_pilha := P1, params(O2, O3), t_parenteseF(O3, O4), pop(P1, P2), G_pilha := P2, t_pontovirgula(O4, O).
+funcproto(I, O):- funcid(I, O1), t_parenteseA(O1, O2),  P is G_pilha, pop(P, P_), push(O1, P_, P1), G_pilha := P1, t_parenteseF(O2, O3),pop(P1, P2), G_pilha := P2, t_pontovirgula(O3, O).
 
-funcdcl(I, O):- funcid(I, O1), t_parenteseA(O1, O2), params(O2, O3), t_parenteseF(O3, O4), block(O4, O).
-funcdcl(I, O):- funcid(I, O1), t_parenteseA(O1, O2), idlist(O2, O3), t_parenteseF(O3, O4), structdef(O4, O).
+funcdcl(I, O):- funcid(I, O1), t_parenteseA(O1, O2),  P is G_pilha, push(O1, P, P1), params(O2, O3), t_parenteseF(O3, O4), pop(P1, P2),G_pilha := P2, block(O4, O).
+funcdcl(I, O):- funcid(I, O1), t_parenteseA(O1, O2),  P is G_pilha, pop(P, P_), push(O1, P_, P1), idlist(O2, O3), t_parenteseF(O3, O4), pop(P1, P2),G_pilha := P2, structdef(O4, O).
 funcdcl(I, O):- block(I, O).
-funcdcl(I, O):- funcid(I, O1), t_parenteseA(O1, O2), t_parenteseF(O2, O3), block(O3, O).
+funcdcl(I, O):- funcid(I, O1), t_parenteseA(O1, O2),  P is G_pilha, pop(P, P_), push(O1, P_, P1), t_parenteseF(O2, O3), pop(P1, P2),G_pilha := P2, block(O3, O).
 
 params(I, O):- param(I, O1), t_virgula(O1, O2), params(O2, O).
 params(I, O):- param(I, O).
@@ -335,7 +338,7 @@ structdef(I, O):- vardcl(I, O).
 
 %-var dcl
 
-vardcl(I, O):- mod_(I, O1), type(O1, O2),variavel(O2, O3), varlist(O3, O4), t_pontovirgula(O4, O).
+vardcl(I, O):- mod_(I, O1), type(O1, O2), variavel(O2, O3), varlist(O3, O4), t_pontovirgula(O4, O).
 vardcl(I, O):- type(I, O2), variavel(O2, O3),  varlist(O3, O4), t_pontovirgula(O4, O).
 vardcl(I, O):- mod_(I, O1), variavel(O1, O3),  varlist(O3, O4), t_pontovirgula(O4, O).
 
@@ -378,20 +381,20 @@ mod_(I, O):- t_class(I, O).
 
 stm(I, O):- vardcl(I, O).
 stm(I, O):- id(I, O1), t_doisP(O1, O).
-stm(I, O):- t_if(I, O1), t_parenteseA(O1, O2), expr(O2, O3), t_parenteseF(O3, O4), stm(O4, O).
-stm(I, O):- t_if(I, O1), t_parenteseA(O1, O2), expr(O2, O3), t_parenteseF(O3, O4), thenstm(O4, O5),t_else(O5, O6), stm(O6, O).
-stm(I, O):- t_while(I, O1), t_parenteseA(O1, O2), expr(O2, O3), t_parenteseF(O3, O4), stm(O4, O).
-stm(I, O):- t_for(I, O1), t_parenteseA(O1, O2), arg(O2, O3), t_pontovirgula(O3, O4), arg(O4, O5), t_pontovirgula(O5, O6), arg(O6, O7), t_parenteseF(O7, O8), stm(O8, O).
+stm(I, O):- t_if(I, O1), t_parenteseA(O1, O2), P is G_pilha, push(O1, P, P1),expr(O2, O3), t_parenteseF(O3, O4), pop(P1, P2), G_pilha := P2,stm(O4, O).
+stm(I, O):- t_if(I, O1), t_parenteseA(O1, O2), P is G_pilha, pop(P, P_), push(O1, P_, P1), expr(O2, O3), t_parenteseF(O3, O4), pop(P1, P2), G_pilha := P2,thenstm(O4, O5),t_else(O5, O6), stm(O6, O).
+stm(I, O):- t_while(I, O1), t_parenteseA(O1, O2), P is G_pilha, pop(P, P_), push(O1, P_, P1), expr(O2, O3), t_parenteseF(O3, O4), pop(P1, P2), G_pilha := P2,stm(O4, O).
+stm(I, O):- t_for(I, O1), t_parenteseA(O1, O2), P is G_pilha, pop(P, P_), push(O1, P_, P1), arg(O2, O3), t_pontovirgula(O3, O4), arg(O4, O5), t_pontovirgula(O5, O6), arg(O6, O7), t_parenteseF(O7, O8), pop(P1, P2), G_pilha := P2,stm(O8, O).
 stm(I, O):- normalstm(I, O).
 
-thenstm(I, O):- t_if(I, O1), t_parenteseA(O1, O2), expr(O2, O3), t_parenteseF(O3, O4),thenstm(O4, O5), t_else(O5, O6), thenstm(O6, O).
-thenstm(I, O):- t_while(I, O1), t_parenteseA(O1, O2), expr(O2, O3), t_parenteseF(O3, O4), thenstm(O4, O).
-thenstm(I, O):- t_for(I, O1), t_parenteseA(O1, O2), arg(O2, O3), t_pontovirgula(O3, O4), arg(O4, O5), t_pontovirgula(O5, O6), arg(O6, O7), t_parenteseF(O7, O8), thenstm(O8, O).
+thenstm(I, O):- t_if(I, O1), t_parenteseA(O1, O2),P is G_pilha,  push(O1, P, P1),expr(O2, O3), t_parenteseF(O3, O4), pop(P1, P2),G_pilha := P2, thenstm(O4, O5), t_else(O5, O6), thenstm(O6, O).
+thenstm(I, O):- t_while(I, O1), t_parenteseA(O1, O2),P is G_pilha, pop(P, P_), push(O1, P_, P1), expr(O2, O3), t_parenteseF(O3, O4), pop(P1, P2), G_pilha := P2, thenstm(O4, O).
+thenstm(I, O):- t_for(I, O1), t_parenteseA(O1, O2),P is G_pilha, pop(P, P_), push(O1, P_, P1), arg(O2, O3), t_pontovirgula(O3, O4), arg(O4, O5), t_pontovirgula(O5, O6), arg(O6, O7), t_parenteseF(O7, O8), pop(P1, P2), G_pilha := P2, thenstm(O8, O).
 thenstm(I, O):- normalstm(I, O).
 
 
-normalstm(I, O):- t_do(I, O1), stm(O1, O2), t_while(O2, O3), t_parenteseA(O3, O4), expr(O4, O5), t_parenteseF(O5, O).
-normalstm(I, O):- t_switch(I, O1), t_parenteseA(O1, O2), expr(O2, O3), t_parenteseF(O3, O4), t_chaveA(O4, O5), casestm(O5, O6), t_chaveF(O6, O).
+normalstm(I, O):- t_do(I, O1), stm(O1, O2), t_while(O2, O3), t_parenteseA(O3, O4), P is G_pilha,  push(O3, P, P1), expr(O4, O5), t_parenteseF(O5, O), pop(P1, P2),G_pilha := P2.
+normalstm(I, O):- t_switch(I, O1), t_parenteseA(O1, O2), P is G_pilha, pop(P, P_), push(O1, P_, P1), expr(O2, O3), t_parenteseF(O3, O4), pop(P1, P2),G_pilha := P2, t_chaveA(O4, O5), casestm(O5, O6), t_chaveF(O6, O).
 normalstm(I, O):- block(I, O).
 normalstm(I, O):- expr(I, O1), t_pontovirgula(O1, O).
 normalstm(I, O):- t_goto(I, O1), id(O1, O2), t_pontovirgula(O2, O).
@@ -457,9 +460,9 @@ op_mult(I, O):- op_unary(I, O1), operador_mult(O1, O2), op_mult(O2, O).
 op_unary(I, O):- op_pointer(I, O).
 op_unary(I, O):- operador_unario(I, O1), op_pointer(O1, O).
 op_unary(I, O):- op_pointer(I, O1), operador_unario(O1, O).
-op_unary(I, O):- t_parenteseA(I, O1), type(O1, O2), op_unary(O2, O).
-op_unary(I, O):- t_sizeof(I, O1), t_parenteseA(O1, O2), type(O2, O3), t_parenteseF(O3, O).
-op_unary(I, O):- t_sizeof(I, O1), t_parenteseA(O1, O2), id(O2, O3), poniters(O3, O4), t_parenteseF(O4, O).
+op_unary(I, O):- t_parenteseA(I, O1), P is G_pilha,  push(O3, P, P1), type(O1, O2), t_parenteseF(O2,O3), pop(P1, P2),G_pilha := P2, op_unary(O3, O).
+op_unary(I, O):- t_sizeof(I, O1), t_parenteseA(O1, O2), P is G_pilha, pop(P, P_), push(O1, P_, P1),type(O2, O3), t_parenteseF(O3, O), pop(P1, P2),G_pilha := P2.
+op_unary(I, O):- t_sizeof(I, O1), t_parenteseA(O1, O2), P is G_pilha, pop(P, P_), push(O1, P_, P1), id(O2, O3), poniters(O3, O4), t_parenteseF(O4, O), pop(P1, P2),G_pilha := P2.
 
 op_pointer(I, O):- value(I, O).
 op_pointer(I, O):- value(I, O1), operador_ponto(O1, O2), op_pointer(O2, O).
@@ -469,11 +472,10 @@ value(I, O):- id(I, O).
 value(I, O):- num(I, O).
 value(I, O):- t_aspas(I, O1), string_(O1, O2), t_aspas(O2, O).
 value(I, O):- t_apost(I, O1), string_(O1, O2), t_apost(O2, O).
-value(I, O):- t_parenteseA(I, O1), expr(O1, O2), t_parenteseF(O2, O).
-value(I, O):- id(I, O1), t_parenteseA(O1, O2), expr(O2, O3), t_parenteseF(O3, O).
-value(I, O):- id(I, O1), t_parenteseA(O1, O2),t_parenteseF(O2, O).
+value(I, O):- t_parenteseA(I, O1),P is G_pilha,  push(O3, P, P1), expr(O1, O2), t_parenteseF(O2, O), pop(P1, P2),G_pilha := P2.
+value(I, O):- id(I, O1), t_parenteseA(O1, O2), P is G_pilha, pop(P, P_), push(O1, P_, P1),expr(O2, O3), t_parenteseF(O3, O), pop(P1, P2),G_pilha := P2.
+value(I, O):- id(I, O1), t_parenteseA(O1, O2),P is G_pilha, pop(P, P_), push(O1, P_, P1),t_parenteseF(O2, O), pop(P1, P2),G_pilha := P2.
 
-%?- value(["(a)"], O).
 %-- operadores de atribuicao----%
 operador_atribuicao(I, O):- t_atribuicao(I, O).
 operador_atribuicao(I, O):- t_somaAtribuicao(I, O).
@@ -522,14 +524,12 @@ operador_shift(I, O):- t_shiftD(I, O).
 %---operadores de ponto---
 operador_ponto(I, O):-t_ponto(I, O).
 operador_ponto(I, O):-t_seta(I, O).
+
+%--G_pilha
+push([H|T], [], [H]).
+push([H|T], P, [H|P]).
+pop([], []).
+pop([H|T], T).
+
 %?- Line is "float b = 0;", token(Line, str_length(Line),"",L), write(L), nl, vardcl(L, O), write(O).
-?- FILE is open("lixo.c", "r"),
-   lerLinha(FILE, L),
-   write(L),
-   programa(L, O),
-   nl, 
-   write(O).
-
-
-
-
+?- G_pilha := [],G_O := [],FILE is open("lixo.c", "r"),lerLinha(FILE, L),write(L), nl, programa(L, O),nl, write(G_pilha).
