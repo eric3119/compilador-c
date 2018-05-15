@@ -165,6 +165,8 @@ t_class(["const"|O], O).
 t_class(["typedef"|O], O).
 t_class(["volatile"|O], O).
 
+t_const(["const"|O], O).
+
 t_main(["main"|O], O).
 t_if(["if"|O], O).
 t_else(["else"|O], O).
@@ -338,7 +340,7 @@ vardcl(I, O):- type(I, O2), variavel(O2, O3),  varlist(O3, O4), t_pontovirgula(O
 vardcl(I, O):- mod_(I, O1), variavel(O1, O3),  varlist(O3, O4), t_pontovirgula(O4, O).
 
 /* types */
-type(I, O):- base(I, O).
+type(I, O):- base(I, O1), pointers(O1, O).
 
 base(I, O):- sign(I ,O1), scalar(O1, O).
 
@@ -527,3 +529,7 @@ operador_ponto(I, O):-t_seta(I, O).
    programa(L, O),
    nl, 
    write(O).
+
+
+
+
