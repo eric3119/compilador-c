@@ -138,6 +138,7 @@ t_letra(H):- letra(L), membro(H,L).
 t_digito(H):- digito(L), membro(H,L).
 t_oct(H):- octdigito(L), membro(H, L).
 t_hex(H):- hexdigito(L), membro(H, L).
+t_imprimivel(H):- imprimiveis(L), membro(H, L).
 
 t_zero("0").
 t_x("x").
@@ -242,6 +243,10 @@ t_aspas(["\""|O], O).
 %#t_qualifier(["const"|O], O).
 %#t_qualifier(["const"|O], O).
 %-------------Regras de formacao------------%
+programa(I, O):- dcls(I, O).
+programa(I, O):- write("erro\n").
+
+
 
 %--reconhecer um id----%
 id([H|O], O):- L is str_length(H), token_lista(H, L, [H1]), t_letra(H1).
@@ -252,7 +257,7 @@ idtail([H|T]):- t_letra(H), idtail(T).
 idtail([H|T]):- t_digito(H), idtail(T).
 %?- id(["_"], O).
 
-%----Reconhecer um digito----
+%----Reconhecer um numero----
 num([H|O], O):- L is str_length(H), token_lista(H, L, [H1]), t_digito(H1).
 num([H|O], O):- L is str_length(H), token_lista(H, L, [H1|T]), t_digito(H1), digit_list(T).
 num([H|O], O):- L is str_length(H), token_lista(H, L, [H1]), t_zero(H1).
@@ -270,12 +275,12 @@ hexlist([H]):- t_hex(H).
 hexlist([H|T]):- t_hex(H), hexlist(T).
 
 %--reconhecer um caracter--
+string_([H|O], O):- L is str_length(H), token_lista(H, L, [H1]), t_imprimivel(H1).
+string_([H|O], O):- L is str_length(H), token_lista(H, L, [H1|T]), t_imprimivel(H1), string_list(T).
 
+string_list([H]):- t_imprimivel(H).
+string_list([H|L]):- t_imprimivel(H), string_list(L).
 %?-num(["0x21"], O).
-teste(I, O):- programa(I, O).
-teste(I, O):- write("Erro").
-
-programa(I, O):- dcls(I, O).
 
 dcls([], []).
 dcls(I, O):- dcl(I, O2), dcls(O2, O).
@@ -460,6 +465,8 @@ op_pointer(I, O):- value(I, O1), t_colcheteA(O1, O2), expr(O2, O3), t_colcheteF(
 
 value(I, O):- id(I, O).
 value(I, O):- num(I, O).
+value(I, O):- t_aspas(I, O1), string_(O1, O2), t_aspas(O2, O).
+value(I, O):- t_apost(I, O1), string_(O1, O2), t_apost(O2, O).
 value(I, O):- t_parenteseA(I, O1), expr(O1, O2), t_parenteseF(O2, O).
 value(I, O):- id(I, O1), t_parenteseA(O1, O2), expr(O2, O3), t_parenteseF(O3, O).
 value(I, O):- id(I, O1), t_parenteseA(O1, O2),t_parenteseF(O2, O).
@@ -514,5 +521,9 @@ operador_shift(I, O):- t_shiftD(I, O).
 operador_ponto(I, O):-t_ponto(I, O).
 operador_ponto(I, O):-t_seta(I, O).
 %?- Line is "float b = 0;", token(Line, str_length(Line),"",L), write(L), nl, vardcl(L, O), write(O).
-?- FILE is open("lixo.c", "r"), lerLinha(FILE, L),teste(L, O), nl, write(O).
-%SEMANTICA
+?- FILE is open("lixo.c", "r"),
+   lerLinha(FILE, L),
+   write(L),
+   programa(L, O),
+   nl, 
+   write(O).
