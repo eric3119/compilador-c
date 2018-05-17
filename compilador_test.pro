@@ -249,17 +249,9 @@ t_seta([t_("->", L)|O], O).
 
 t_apost([t_("'", L)|O], O).
 t_aspas([t_("\"", L)|O], O).
-%#t_qualifier(["const"|O], O).
-%#t_qualifier(["const"|O], O).
 %-------------Regras de formacao------------%
 programa(I, O):- dcls(I, O).
-%programa(I, O):- Z is G_O, erro_(Z).
 
-/*erro_(L):- O is G_pilha, balanceamento(O).
-erro_(L):- write("nao esperado"), write(G_O), write("na linha ").
-erro([t_(A, L)|T]):- write("nao esperado "), write(A), write(" na linha: "), write(L), nl.
-balanceamento([H]):- write("nao esperado "), write(G_O), nl.
-balanceamento([H|T]):- write("nao esperado "), write(G_O), nl.*/
 
 
 %--reconhecer um id----%
@@ -297,7 +289,8 @@ string_list([H|L]):- t_imprimivel(H), string_list(L).
 %?-num(["0x21"], O).
 
 dcls([], []).
-dcls(I, O):- dcl(I, O2),!,  dcls(O2, O).
+dcls(I, O):- dcl(I, O2),  dcls(O2, O).
+
 
 dcl(I, O):- funcdcl(I, O).
 dcl(I, O):- funcproto(I, O).
@@ -308,9 +301,9 @@ dcl(I, O):- vardcl(I, O).
 dcl(I, O):- typedefdcl(I, O).
 
 %function declaration
-funcproto(I, O):- funcid(I, O1), t_parenteseA(O1, O2), types(O2, O3), t_parenteseF(O3, O4), t_pontovirgula(O4, O).
-funcproto(I, O):- funcid(I, O1), t_parenteseA(O1, O2), params(O2, O3), t_parenteseF(O3, O4), t_pontovirgula(O4, O).
-funcproto(I, O):- funcid(I, O1), t_parenteseA(O1, O2), t_parenteseF(O2, O3), t_pontovirgula(O3, O).
+funcproto(I, O):- funcid(I, O1),  t_parenteseA(O1, O2), types(O2, O3), t_parenteseF(O3, O4), t_pontovirgula(O4, O).
+funcproto(I, O):- funcid(I, O1),  t_parenteseA(O1, O2), params(O2, O3), t_parenteseF(O3, O4), t_pontovirgula(O4, O).
+funcproto(I, O):- funcid(I, O1),  t_parenteseA(O1, O2), t_parenteseF(O2, O3), t_pontovirgula(O3, O).
 
 funcdcl(I, O):- funcid(I, O1), t_parenteseA(O1, O2), params(O2, O3), t_parenteseF(O3, O4), block(O4, O).
 funcdcl(I, O):- funcid(I, O1), t_parenteseA(O1, O2), idlist(O2, O3), t_parenteseF(O3, O4), structdef(O4, O).
@@ -336,8 +329,8 @@ funcid(I, O):- id(I, O).
 
 %Type declaration
 typedefdcl(I, O):- t_typedef(I, O1), type(O1, O2), id(O2, O3), t_pontovirgula(O3, O).
-structdcl(I, O):- t_struct(I, O1), id(O1, O2), t_chaveA(O2, O3), structdef(O3, O4), t_chaveF(O4, O5), t_pontovirgula(O5, O).
-uniondcl(I, O):- t_union(I, O1), id(O1, O2), t_chaveA(O2, O3), structdef(O3, O4), t_chaveF(O4, O5), t_pontovirgula(O5, O).
+structdcl(I, O):- t_typedef(I, O1),t_struct(O1, O2), id(O2, O3), t_chaveA(O3, O4), structdef(O4, O5), t_chaveF(O5, O6), t_pontovirgula(O6, O).
+uniondcl(I, O):- t_typedef(I, O1),t_union(O1, O2), id(O2, O3), t_chaveA(O3, O4), structdef(O4, O5), t_chaveF(O5, O6), t_pontovirgula(O6, O).
 
 structdef(I, O):- vardcl(I, O1), structdef(O1, O).
 structdef(I, O):- vardcl(I, O).
@@ -399,7 +392,6 @@ thenstm(I, O):- t_if(I, O1), t_parenteseA(O1, O2), expr(O2, O3), t_parenteseF(O3
 thenstm(I, O):- t_while(I, O1), t_parenteseA(O1, O2), expr(O2, O3), t_parenteseF(O3, O4), thenstm(O4, O).
 thenstm(I, O):- t_for(I, O1), t_parenteseA(O1, O2), arg(O2, O3), t_pontovirgula(O3, O4), arg(O4, O5), t_pontovirgula(O5, O6), arg(O6, O7), t_parenteseF(O7, O8), thenstm(O8, O).
 thenstm(I, O):- normalstm(I, O).
-
 
 normalstm(I, O):- t_do(I, O1), stm(O1, O2), t_while(O2, O3), t_parenteseA(O3, O4), expr(O4, O5), t_parenteseF(O5, O).
 normalstm(I, O):- t_switch(I, O1), t_parenteseA(O1, O2), expr(O2, O3), t_parenteseF(O3, O4), t_chaveA(O4, O5), casestm(O5, O6), t_chaveF(O6, O).
@@ -561,16 +553,9 @@ pre_programa(L, []):- programa(L, O).
 
 %?- Line is "float b = 0;", token(Line, str_length(Line),"",L), write(L), nl, vardcl(L, O), write(O).
 ?- G_pilha := [],G_O := [],
-FILE is open("lixo.c", "r"),
-lerLinha(FILE, L, 1), /* write(L), nl, */
-balanceamento_geral(L),
-P is  G_pilha,
-%write(G_pilha),
-pre_programa(L, P).
-
-
-
-
-
-
-
+	FILE is open("lixo.c", "r"),
+	lerLinha(FILE, L, 1), /* write(L), nl, */
+	balanceamento_geral(L),
+	P is  G_pilha,
+	%write(G_pilha),
+	pre_programa(L, P).
