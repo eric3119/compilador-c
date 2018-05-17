@@ -379,7 +379,7 @@ array_(I, I).
 varlist(I, O):- t_virgula(I, O2), varitem(O2, O3), varlist(O3, O).
 varlist(I, I).
 
-varitem(I, O):- pointers(I, O1), var(O1, O).
+varitem(I, O):- pointers(I, O1), variavel(O1, O).
 
 mod_(I, O):- t_class(I, O).
 
