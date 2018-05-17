@@ -171,7 +171,6 @@ t_class([t_("register", L)|O], O).
 t_class([t_("static", L)|O], O).
 t_class([t_("extern", L)|O], O).
 t_class([t_("const", L)|O], O).
-t_class([t_("typedef", L)|O], O).
 t_class([t_("volatile", L)|O], O).
 
 t_main([t_("main", L)|O], O).
@@ -251,6 +250,7 @@ t_apost([t_("'", L)|O], O).
 t_aspas([t_("\"", L)|O], O).
 %-------------Regras de formacao------------%
 programa(I, O):- dcls(I, O).
+programa(I, O):- write("erro").
 
 
 
@@ -289,7 +289,7 @@ string_list([H|L]):- t_imprimivel(H), string_list(L).
 %?-num(["0x21"], O).
 
 dcls([], []).
-dcls(I, O):- dcl(I, O2),  dcls(O2, O).
+dcls(I, O):- dcl(I, O2),dcls(O2, O).
 
 
 dcl(I, O):- funcdcl(I, O).
@@ -306,8 +306,7 @@ funcproto(I, O):- funcid(I, O1),  t_parenteseA(O1, O2), params(O2, O3), t_parent
 funcproto(I, O):- funcid(I, O1),  t_parenteseA(O1, O2), t_parenteseF(O2, O3), t_pontovirgula(O3, O).
 
 funcdcl(I, O):- funcid(I, O1), t_parenteseA(O1, O2), params(O2, O3), t_parenteseF(O3, O4), block(O4, O).
-funcdcl(I, O):- funcid(I, O1), t_parenteseA(O1, O2), idlist(O2, O3), t_parenteseF(O3, O4), structdef(O4, O).
-funcdcl(I, O):- block(I, O).
+funcdcl(I, O):- funcid(I, O1), t_parenteseA(O1, O2), idlist(O2, O3), t_parenteseF(O3, O4), structdef(O4, O5), block(O5, O).
 funcdcl(I, O):- funcid(I, O1), t_parenteseA(O1, O2), t_parenteseF(O2, O3), block(O3, O).
 
 params(I, O):- param(I, O1), t_virgula(O1, O2), params(O2, O).
@@ -329,8 +328,8 @@ funcid(I, O):- id(I, O).
 
 %Type declaration
 typedefdcl(I, O):- t_typedef(I, O1), type(O1, O2), id(O2, O3), t_pontovirgula(O3, O).
-structdcl(I, O):- t_typedef(I, O1),t_struct(O1, O2), id(O2, O3), t_chaveA(O3, O4), structdef(O4, O5), t_chaveF(O5, O6), t_pontovirgula(O6, O).
-uniondcl(I, O):- t_typedef(I, O1),t_union(O1, O2), id(O2, O3), t_chaveA(O3, O4), structdef(O4, O5), t_chaveF(O5, O6), t_pontovirgula(O6, O).
+structdcl(I, O):- t_struct(I, O1), id(O1, O2), t_chaveA(O2, O3), structdef(O3, O4), t_chaveF(O4, O5), t_pontovirgula(O5, O).
+uniondcl(I, O):- t_union(I, O1), id(O1, O2), t_chaveA(O2, O3), structdef(O3, O4), t_chaveF(O4, O5), t_pontovirgula(O5, O).
 
 structdef(I, O):- vardcl(I, O1), structdef(O1, O).
 structdef(I, O):- vardcl(I, O).
@@ -347,6 +346,10 @@ vardcl(I, O):- mod_(I, O1), variavel(O1, O3), varlist(O3, O4), t_pontovirgula(O4
 type(I, O):- base(I, O1), pointers(O1, O).
 
 base(I, O):- sign(I ,O1), scalar(O1, O).
+base(I, O):- t_struct(I ,O1), id(O1, O).
+base(I, O):- t_union(I, O1), id(O1, O).
+base(I, O):- t_struct(I ,O1), t_chaveA(O1, O2), structdef(O2, O3), t_chaveF(O3, O).
+base(I, O):- t_union(I, O1), t_chaveA(O1, O2), structdef(O2, O3), t_chaveF(O3, O) .
 
 sign(I, O):- t_signed(I, O).
 sign(I, O):- t_unsigned(I, O).
@@ -558,4 +561,4 @@ pre_programa(L, []):- programa(L, O).
 	balanceamento_geral(L),
 	P is  G_pilha,
 	%write(G_pilha),
-	pre_programa(L, P).
+	pre_programa(L, P), write(L).
