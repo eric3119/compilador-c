@@ -297,7 +297,7 @@ string_list([H|L]):- t_imprimivel(H), string_list(L).
 %?-num(["0x21"], O).
 
 dcls([], []).
-dcls(I, O):- dcl(I, O2), dcls(O2, O).
+dcls(I, O):- dcl(I, O2),!,  dcls(O2, O).
 
 dcl(I, O):- funcdcl(I, O).
 dcl(I, O):- funcproto(I, O).
@@ -550,9 +550,9 @@ balanceamento_geral([t_("{", L)|T]):- P is G_pilha, push(t_("{", L), P, P1), G_p
 balanceamento_geral([t_(")", L)|T]):- P is G_pilha, igual(P, t_("(", L)), pop(P, A), G_pilha := A, balanceamento_geral(T).
 balanceamento_geral([t_("]", L)|T]):- P is G_pilha, igual(P, t_("[", L)), pop(P, A), G_pilha := A, balanceamento_geral(T).
 balanceamento_geral([t_("}", L)|T]):- P is G_pilha, igual(P, t_("{", L)), pop(P, A), G_pilha := A, balanceamento_geral(T).
-balanceamento_geral([t_(")", L)|T]):- P is G_pilha, not(igual(P, t_("(", L))).
-balanceamento_geral([t_("]", L)|T]):- P is G_pilha, not(igual(P, t_("[", L))).
-balanceamento_geral([t_("}", L)|T]):- P is G_pilha, not(igual(P, t_("{", L))).
+balanceamento_geral([t_(")", L)|T]):- P is G_pilha, not(igual(P, t_("(", L))), push(t_(")", L), P, P1), G_pilha := P1.
+balanceamento_geral([t_("]", L)|T]):- P is G_pilha, not(igual(P, t_("[", L))), push(t_("]", L), P, P1), G_pilha := P1.
+balanceamento_geral([t_("}", L)|T]):- P is G_pilha, not(igual(P, t_("{", L))), push(t_("}", L), P, P1), G_pilha := P1.
 balanceamento_geral([H|T]):- balanceamento_geral(T).
 
 pre_programa(L, [t_(H, Linha)|O]):- write(H), write(" nao esperado na linha "), write(Linha).
