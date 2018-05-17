@@ -248,11 +248,14 @@ t_seta([t_("->", L)|O], O).
 
 t_apost([t_("'", L)|O], O).
 t_aspas([t_("\"", L)|O], O).
+
+%----------------------------%
+exibe_erro_linha([t_(H, X)|T]):- writeq(H), write(" na linha "), write(X), terminate("\nEncerrado\n").
+%----------------------------%
+
 %-------------Regras de formacao------------%
-programa(I, O):- dcls(I, O).
-programa(I, O):- write("erro").
 
-
+programa(I, O):- dcls(I, O);(writeq(programa),nl, write(O)).
 
 %--reconhecer um id----%
 id([t_(H, Linha)|O], O):- L is str_length(H), token_lista(H, L, [H1]), t_letra(H1).
@@ -288,8 +291,11 @@ string_list([H]):- t_imprimivel(H).
 string_list([H|L]):- t_imprimivel(H), string_list(L).
 %?-num(["0x21"], O).
 
+
+
 dcls([], []).
-dcls(I, O):- dcl(I, O2),dcls(O2, O).
+dcls(I, O):- (dcl(I, O2);(writeq("erro dcl"),nl,exibe_erro_linha(I))),
+			 (dcls(O2, O);(writeq("erro dlcs"),nl,exibe_erro_linha(O2))).
 
 
 dcl(I, O):- funcdcl(I, O).
@@ -298,7 +304,7 @@ dcl(I, O):- structdcl(I, O).
 dcl(I, O):- uniondcl(I, O).
 dcl(I, O):- enumdcl(I, O).
 dcl(I, O):- vardcl(I, O).
-dcl(I, O):- typedefdcl(I, O).
+dcl(I, O):- (typedefdcl(I, O);writeq("erro dcl"),nl,exibe_erro_linha(I)).
 
 %function declaration
 funcproto(I, O):- funcid(I, O1),  t_parenteseA(O1, O2), types(O2, O3), t_parenteseF(O3, O4), t_pontovirgula(O4, O).
@@ -550,8 +556,8 @@ balanceamento_geral([t_("]", L)|T]):- P is G_pilha, not(igual(P, t_("[", L))), p
 balanceamento_geral([t_("}", L)|T]):- P is G_pilha, not(igual(P, t_("{", L))), push(t_("}", L), P, P1), G_pilha := P1.
 balanceamento_geral([H|T]):- balanceamento_geral(T).
 
-pre_programa(L, [t_(H, Linha)|O]):- write(H), write(" nao esperado na linha "), write(Linha).
-pre_programa(L, [t_(H, Linha)]):- write(H), write(" nao esperado na linha "), write(Linha).
+pre_programa(L, [t_(H, Linha)|O]):- writeq(H), write(" nao esperado na linha "), write(Linha).
+pre_programa(L, [t_(H, Linha)]):- writeq(H), write(" nao esperado na linha "), write(Linha).
 pre_programa(L, []):- programa(L, O).
 
 %?- Line is "float b = 0;", token(Line, str_length(Line),"",L), write(L), nl, vardcl(L, O), write(O).
